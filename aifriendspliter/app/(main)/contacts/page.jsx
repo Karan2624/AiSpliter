@@ -1,25 +1,40 @@
 "use client";
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { BarLoader } from "react-spinners";
-import { Plus, User, Users } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import { useConvexQuery } from "@/hooks/use-convex-query";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar";
+import { BarLoader } from "react-spinners";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { CreateGroupModal } from "./_components/create-group-modal";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Plus, Users, User } from "lucide-react";
+import { CreateGroupModal } from "./components/create-group-modal";
 
-const ContactsPage = () => {
+export default function ContactsPage() {
   const [isCreateGroupModalOpen, setIsCreateGroupModalOpen] = useState(false);
-  const router = useRouter(); // ✅ moved before any returns
-  const { isLoading, data } = useConvexQuery(api.contacts.getAllContacts);
-  const { users, groups } = data || { users: [], groups: [] };
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const { data, isLoading } = useConvexQuery(api.contacts.getAllContacts);
+
+  // Check for the createGroup parameter when the component mounts
+  useEffect(() => {
+    const createGroupParam = searchParams.get("createGroup");
+
+    if (createGroupParam === "true") {
+      // Open the modal
+      setIsCreateGroupModalOpen(true);
+
+      // Remove the parameter from the URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete("createGroup");
+
+      // Replace the current URL without the parameter
+      router.replace(url.pathname + url.search);
+    }
+  }, [searchParams, router]);
 
   if (isLoading) {
     return (
@@ -28,6 +43,8 @@ const ContactsPage = () => {
       </div>
     );
   }
+
+  const { users, groups } = data || { users: [], groups: [] };
 
   return (
     <div className="container mx-auto py-6">
@@ -40,7 +57,7 @@ const ContactsPage = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* People Section */}
+        {/* Individual Contacts */}
         <div>
           <h2 className="text-xl font-bold mb-4 flex items-center">
             <User className="mr-2 h-5 w-5" />
@@ -58,18 +75,20 @@ const ContactsPage = () => {
                 <Link key={user.id} href={`/person/${user.id}`}>
                   <Card className="hover:bg-muted/30 transition-colors cursor-pointer">
                     <CardContent className="py-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={user.imageUrl} />
-                          <AvatarFallback>
-                            {user.name?.charAt(0) || "?"}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">{user.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {user.email}
-                          </p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={user.imageUrl} />
+                            <AvatarFallback>
+                              {user.name.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">{user.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {user.email}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
@@ -80,7 +99,7 @@ const ContactsPage = () => {
           )}
         </div>
 
-        {/* Groups Section */}
+        {/* Groups */}
         <div>
           <h2 className="text-xl font-bold mb-4 flex items-center">
             <Users className="mr-2 h-5 w-5" />
@@ -98,15 +117,17 @@ const ContactsPage = () => {
                 <Link key={group.id} href={`/groups/${group.id}`}>
                   <Card className="hover:bg-muted/30 transition-colors cursor-pointer">
                     <CardContent className="py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-primary/10 p-2 rounded-md">
-                          <Users className="h-6 w-6 text-primary" />
-                        </div>
-                        <div>
-                          <p className="font-medium">{group.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {group.memberCount} members
-                          </p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-primary/10 p-2 rounded-md">
+                            <Users className="h-6 w-6 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{group.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {group.memberCount} members
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
@@ -121,10 +142,10 @@ const ContactsPage = () => {
       <CreateGroupModal
         isOpen={isCreateGroupModalOpen}
         onClose={() => setIsCreateGroupModalOpen(false)}
-        onSuccess={(groupId) => router.push(`/groups/${groupId}`)}
+        onSuccess={(groupId) => {
+          router.push(`/groups/${groupId}`);
+        }}
       />
     </div>
   );
-};
-
-export default ContactsPage;
+}
