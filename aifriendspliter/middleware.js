@@ -1,4 +1,3 @@
-export const runtime = 'nodejs';
 
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
@@ -24,6 +23,7 @@ export default clerkMiddleware(async (auth, req) => {
 });
 
 export const config = {
+  runtime: 'nodejs', // <-- Add this line
   matcher: [
     // Skip Next.js internals and all static files, unless found in search params
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
