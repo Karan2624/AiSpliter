@@ -1,5 +1,7 @@
+// middleware.ts
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
+
 const isProtectedRoute = createRouteMatcher([
   "/dashboard(.*)",
   "/expenses(.*)",
@@ -9,22 +11,22 @@ const isProtectedRoute = createRouteMatcher([
   "/settlements(.*)",
 ]);
 
+export default clerkMiddleware(async (auth, req) => {
+  const session = await auth(); // await the promise
+  const userId = session.userId; // access userId
 
-export default clerkMiddleware(async(auth,req) => {
-  const {userId} = await auth();
-  if(!userId && isProtectedRoute(req)){
-    const { redirectToSignIn } = await auth();
-    return redirectToSignIn();
+  if (!userId && isProtectedRoute(req)) {
+    const signInUrl = '/sign-in?redirect_url=' + encodeURIComponent(req.url);
+    return NextResponse.redirect(signInUrl);
   }
+  
   return NextResponse.next();
 });
 
-
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
     '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Always run for API routes
     '/(api|trpc)(.*)',
   ],
+  runtime: "experimental-edge",
 };
